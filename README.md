@@ -1,12 +1,14 @@
--match_order
-winner_seed
-loser_seed
-match_score_raw
-winner_sets_won
-loser_sets_won
-winner_games_won
-loser_games_won
-winner_tiebreaks_won
-loser_tiebreaks_won
+# Tournaments parser `tournament.py`
 
-серия турнира - это виды, гранды всякие()
+Parses tournament list per year and each tournament page for additional information
+
+```
+>> python tournament.py --help
+Usage: tournament.py command [args...]
+
+Commands:
+  tournaments-per-year   Parse tournaments list for a specific year and store data per tournament
+  tournaments-details    Parse each tournament for a specific year to get more deetails and store data per tournament
+```
+
+
