@@ -5,7 +5,7 @@ from request import request_html
 from db import db, build_tournament_key, get_tournament_keys
 from pq import *
 from utils import *
-from constants import ATP_PREFIX
+from constants import ATP_PREFIX, tournament_category_map
 from countries import countries_code_map
 import log
 
@@ -65,11 +65,22 @@ def tournaments_per_year(year, from_cache=True):
         pq_eq(4),
         pq_find('td'),
     )
+
+    get_category = compose(
+        flip(get(default=None))(tournament_category_map),
+        get(0),
+        str_split('.'),
+        get(-1),
+        str_split('categorystamps_'),
+        pq_attr('src'),
+        pq_eq(0),
+        pq_find('td img')
+    )
+
     result = {}
     for one_result in q.find('.tourney-result'):
         url = get_url(one_result)
         name = get_name(one_result)
-
         if not url:
             log.warning('{} is not started yet'.format(name))
             # tournament in future
@@ -79,6 +90,7 @@ def tournaments_per_year(year, from_cache=True):
         city, country = get_location(one_result)
         year, week, _ = get_dates(one_result)
         surface_type, surface = get_surface(one_result)
+        category = get_category(one_result)
 
         one = dict(
             slug=slug,
@@ -91,6 +103,7 @@ def tournaments_per_year(year, from_cache=True):
             url=url,
             type=surface_type,
             surface=surface,
+            category=category,
         )
         log.info('{} {} is parsed'.format(name, year))
         db[build_tournament_key(year, slug, code)] = one
