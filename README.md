@@ -13,4 +13,4 @@ Commands:
 
 
 
-!Handle (RET) in match score
+!Handle (DEF) in match score

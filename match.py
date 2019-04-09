@@ -1,18 +1,32 @@
 from clize import run
+from lxml.html import HtmlElement
 from toolz.curried import *
 from request import request_html
 from constants import ATP_PREFIX
 from pq import *
 from utils import *
-from db import db, build_match_key, reverse_tournament_key
+from db import db, build_match_key, reverse_tournament_key, get_match_keys, get_tournament_keys
 from countries import countries_code_map
 import log
+
+def matches_per_tournaments(year, from_cache=True):
+    """
+    Parse each tournament for a specific year to get basic match info and store data per match
+
+    :param year: Tournament year
+    :param from_cache: Take page html form db cache
+    """
+    [matches_per_tournament(key, from_cache=from_cache)
+     for key in get_tournament_keys(year)]
 
 
 def matches_per_tournament(key, from_cache=False):
     tournament = db[key]
     url = tournament['url']
     q = PyQuery(request_html(url, from_cache=from_cache))
+
+    def get_left_right(default): return juxt(
+        get(0, default=default), get(1, default=default))
 
     get_player_seed = compose(
         str_strip('()'),
@@ -31,7 +45,11 @@ def matches_per_tournament(key, from_cache=False):
         pq_attr('src'),
     )
     get_players_country = compose(
-        list, map(get_player_country), pq_find('.day-table-flag img'))
+        get_left_right(None),
+        list,
+        map(get_player_country),
+        pq_find('.day-table-flag img')
+    )
 
     get_is_winner_left = compose(
         lambda result: result == 'Defeats',
@@ -44,15 +62,15 @@ def matches_per_tournament(key, from_cache=False):
         pq_attr('href')
     )
     get_player_slug = compose(
-        get(3),
+        get(3, default=None),
         split_player_url
     )
     get_player_code = compose(
-        get(4),
+        get(4, default=None),
         split_player_url
     )
     get_player_url = compose(
-        curry(add, ATP_PREFIX),
+        lambda href: add(ATP_PREFIX, href) if href and href != '#' else None,
         pq_attr('href')
     )
     get_player_details = compose(
@@ -61,7 +79,11 @@ def matches_per_tournament(key, from_cache=False):
         juxt(pq_text, get_player_url, get_player_slug, get_player_code),
     )
     get_players_details = compose(
-        list, map(get_player_details), pq_find('.day-table-name a'))
+        get_left_right({}),
+        list,
+        map(get_player_details),
+        pq_find('.day-table-name a')
+    )
 
     get_match_code = compose(
         get(5, default=None),
@@ -74,18 +96,18 @@ def matches_per_tournament(key, from_cache=False):
         pq_find('.day-table-score a')
     )
 
-    def parse_match_set_score(score):
-        if score == '(W/O)' or len(score) == 2:
+    def parse_set_score(score):
+        if score in ['(W/O)', '(RET)'] or len(score) == 2:
             return score
-        if len(score) < 2 or len(score) > 3:
+        if len(score) < 2 or len(score) > 4:
             log.warning(
                 'New match score type {} for key {}'.format(score, key))
             return score
-        return '{}({})'.format(score[:-1], score[-1])
+        return '{}({})'.format(score[:2], score[2:])
 
-    get_match_score = compose(
+    get_score = compose(
         ' '.join,
-        map(parse_match_set_score),
+        map(parse_set_score),
         str_split(' '),
         pq_text,
         pq_find('.day-table-score')
@@ -97,12 +119,15 @@ def matches_per_tournament(key, from_cache=False):
         pq_parents('tbody')
     )
 
-    for match in q.find('.day-table tbody tr'):
+    tournament_year, tournament_slug, tournament_code = reverse_tournament_key(
+        key)
+
+    def get_match(match):
         left_seed, right_seed = get_players_seed(match)
         left_country, right_country = get_players_country(match)
         is_winner_left = get_is_winner_left(match)
         left_player, right_player = get_players_details(match)
-        score = get_match_score(match)
+        score = get_score(match)
         match_code = get_match_code(match)
         match_order = get_match_order(match)
 
@@ -116,8 +141,6 @@ def matches_per_tournament(key, from_cache=False):
             country=right_country,
             **right_player
         )
-        tournament_year, tournament_slug, tournament_code = reverse_tournament_key(
-            key)
         result = dict(
             score=score,
             code=match_code,
@@ -132,9 +155,26 @@ def matches_per_tournament(key, from_cache=False):
         else:
             result['winner'] = right
             result['looser'] = left
-        print(build_match_key(result))
+
+        return result
+
+    for match in q.find('.day-table tbody tr'):
+        try:
+            result = get_match(match)
+        except:
+            log.error('Error in: {}:{} tournament, with next match data: {}'.format(
+                key, url, ' '.join(pq_text(match).split())))
+            raise
         db[build_match_key(result)] = result
 
 
+def matches_details(year):
+    [match_detail(key) for key in get_match_keys(year)]
+
+
+def match_detail(key):
+    pass
+
+
 if __name__ == '__main__':
-    run(matches_per_tournament)
+    run(matches_per_tournament, matches_per_tournaments)

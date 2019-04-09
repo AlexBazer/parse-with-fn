@@ -48,6 +48,16 @@ def build_match_key(match):
     ))
 
 
+def get_match_keys(year):
+    """ Get all match keys for specific year
+
+    :params year: Tournament year
+    """
+    return filter(
+        str_startswith("|".join(['match', year]))
+    )(db.keys())
+
+
 def get_tournament(key):
     try:
         return db[key]
@@ -58,4 +68,4 @@ def get_tournament(key):
 
 if __name__ == "__main__":
     run(compose(pprint, list, get_tournament_keys), compose(pprint, get_tournament),
-        build_tournament_key, build_match_key)
+        build_tournament_key, build_match_key, compose(pprint, list, get_match_keys))
