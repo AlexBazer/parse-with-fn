@@ -146,4 +146,4 @@ def tournament_detail(key, from_cache=True):
 
 
 if __name__ == '__main__':
-    run(tournaments_per_year, tournaments_details)
+    run(tournaments_per_year, tournaments_details, tournament_detail)

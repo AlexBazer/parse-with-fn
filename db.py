@@ -40,10 +40,6 @@ def build_match_key(match):
             get('tournament_slug'),
             get('tournament_code'),
             get('code'),
-            get_in(['winner', 'slug']),
-            get_in(['winner', 'code']),
-            get_in(['looser', 'slug']),
-            get_in(['looser', 'code']),
         )(match)
     ))
 
@@ -58,6 +54,19 @@ def get_match_keys(year):
     )(db.keys())
 
 
+def build_player_key(slug, code):
+    return compose(
+        '|'.join,
+        map(str),
+    )(('player', slug, code))
+
+
+def get_player_keys():
+    return filter(
+        str_startswith("player")
+    )(db.keys())
+
+
 def get_tournament(key):
     try:
         return db[key]
@@ -66,6 +75,16 @@ def get_tournament(key):
         return {}
 
 
+def get_by_key(key):
+    return pprint(db.get(key))
+
+
 if __name__ == "__main__":
-    run(compose(pprint, list, get_tournament_keys), compose(pprint, get_tournament),
-        build_tournament_key, build_match_key, compose(pprint, list, get_match_keys))
+    run(compose(pprint, list, get_tournament_keys),
+        compose(pprint, get_tournament),
+        build_tournament_key,
+        build_match_key,
+        compose(pprint, list, get_match_keys),
+        get_by_key,
+        compose(pprint, list, get_player_keys)
+    )

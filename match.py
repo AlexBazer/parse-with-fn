@@ -1,3 +1,4 @@
+from datetime import timedelta
 from clize import run
 from lxml.html import HtmlElement
 from toolz.curried import *
@@ -5,9 +6,17 @@ from request import request_html
 from constants import ATP_PREFIX
 from pq import *
 from utils import *
-from db import db, build_match_key, reverse_tournament_key, get_match_keys, get_tournament_keys
+from db import db, build_match_key, reverse_tournament_key, get_match_keys, get_tournament_keys, build_player_key
 from countries import countries_code_map
 import log
+from pprint import pprint
+
+def resolve_url(url):
+    if url and url != '#':
+        return ATP_PREFIX + url
+
+    return None
+
 
 def matches_per_tournaments(year, from_cache=True):
     """
@@ -20,7 +29,21 @@ def matches_per_tournaments(year, from_cache=True):
      for key in get_tournament_keys(year)]
 
 
-def matches_per_tournament(key, from_cache=False):
+split_player_url = compose(
+    str_split('/'),
+    pq_attr('href')
+)
+get_player_slug = compose(
+    get(3, default=None),
+    split_player_url
+)
+get_player_code = compose(
+    get(4, default=None),
+    split_player_url
+)
+
+
+def matches_per_tournament(key, from_cache=True):
     tournament = db[key]
     url = tournament['url']
     q = PyQuery(request_html(url, from_cache=from_cache))
@@ -57,20 +80,8 @@ def matches_per_tournament(key, from_cache=False):
         pq_find('.day-table-vertical-label')
     )
 
-    split_player_url = compose(
-        str_split('/'),
-        pq_attr('href')
-    )
-    get_player_slug = compose(
-        get(3, default=None),
-        split_player_url
-    )
-    get_player_code = compose(
-        get(4, default=None),
-        split_player_url
-    )
     get_player_url = compose(
-        lambda href: add(ATP_PREFIX, href) if href and href != '#' else None,
+        resolve_url,
         pq_attr('href')
     )
     get_player_details = compose(
@@ -113,6 +124,12 @@ def matches_per_tournament(key, from_cache=False):
         pq_find('.day-table-score')
     )
 
+    get_url = compose(
+        resolve_url,
+        pq_attr('href'),
+        pq_find('.day-table-score a')
+    )
+
     get_match_order = compose(
         pq_text,
         pq_prev,
@@ -128,8 +145,16 @@ def matches_per_tournament(key, from_cache=False):
         is_winner_left = get_is_winner_left(match)
         left_player, right_player = get_players_details(match)
         score = get_score(match)
-        match_code = get_match_code(match)
-        match_order = get_match_order(match)
+        url = get_url(match)
+        code = get_match_code(match)
+        order = get_match_order(match)
+
+        if not left_country:
+            log.warning('{}:{} Cant detect COUNTRY for {}'.format(
+                key, url, left_player['full_name']))
+        if not right_country:
+            log.warning('{}:{} Cant detect COUNTRY for {}'.format(
+                key, url, right_player['full_name']))
 
         left = dict(
             seed=left_seed,
@@ -143,8 +168,9 @@ def matches_per_tournament(key, from_cache=False):
         )
         result = dict(
             score=score,
-            code=match_code,
-            order=match_order,
+            code=code,
+            order=order,
+            url=url,
             tournament_year=tournament_year,
             tournament_slug=tournament_slug,
             tournament_code=tournament_code,
@@ -168,13 +194,110 @@ def matches_per_tournament(key, from_cache=False):
         db[build_match_key(result)] = result
 
 
-def matches_details(year):
-    [match_detail(key) for key in get_match_keys(year)]
+def matches_details(year, from_cache=True):
+    [match_detail(key, from_cache) for key in get_match_keys(year)]
 
 
-def match_detail(key):
-    pass
+def match_detail(key, from_cache=True):
+    match = db[key]
+    url = match['url']
+    if not url:
+        log.warning('{} match does not have details'.format(key))
+        return
 
+    q = PyQuery(request_html(url, from_cache=from_cache))
+
+    # Get complete players data and fix it in current match object
+    get_player_details = excepts(
+        TypeError,
+        compose(
+            dict,
+            curry(zip, ['url', 'full_name', 'slug', 'code']),
+            juxt(compose(resolve_url, pq_attr('href')),
+                 pq_text, get_player_slug, get_player_code),
+        ), {})
+
+    get_winner = compose(
+        get_player_details,
+        pq_find('.match-stats-score-container td.won-game a.scoring-player-name')
+    )
+
+    get_looser = compose(
+        get_player_details,
+        pq_find('.match-stats-score-container td:not(.won-game) a.scoring-player-name')
+    )
+
+    winner = get_winner(q)
+    looser = get_looser(q)
+
+    if not get_in(['winner', 'slug'])(match):
+        match = update_in(match, ['winner'], flip(merge)(winner))
+        db[key] = match
+
+    if not get_in(['looser', 'slug'])(match):
+        match = update_in(match, ['looser'], flip(merge)(looser))
+        db[key] = match
+
+    get_is_winner_left = compose(
+        le(0),
+        curry(str.find)(winner['url']),
+        pq_attr('href'),
+        pq_find('.match-stats-player-left .player-left-name a')
+    )
+
+    get_time = compose(
+        pq_text,
+        pq_find('.match-info-row .time')
+    )
+
+    def parse_score(score_q):
+        breakdown = pq_find('.stat-breakdown')(score_q)
+        if(breakdown):
+            return compose(
+                dict,
+                curry(zip, ['won', 'total']),
+                str_split('/'),
+                str_strip('()'),
+                pq_text,
+            )(breakdown)
+        return {'total': score_q.text()}
+
+    is_winner_left = get_is_winner_left(q)
+    left_name = 'winner' if is_winner_left else 'looser'
+    right_name = 'looser' if is_winner_left else 'winner'
+    get_player_stats = compose(
+        dict,
+        curry(zip, [left_name, right_name, 'label']),
+        juxt(compose(
+            parse_score,
+            pq_find('.match-stats-number-left')
+        ), compose(
+            parse_score,
+            pq_find('.match-stats-number-right')
+        ), compose(
+            pq_text,
+            pq_find('.match-stats-label')
+        ))
+    )
+    get_players_stats = compose(
+        list,
+        map(get_player_stats),
+        pq_find('.match-stats-table tr.match-stats-row')
+    )
+
+    match['duration'] = get_time(q)
+    match['stats'] = get_players_stats(q)
+    db[key] = match
+
+    # collect players info
+    get_player_key = lambda status: build_player_key(
+        *juxt(get_in([status, 'slug']), get_in([status, 'code']))(match)
+    )
+    winner_key = get_player_key('winner')
+    looser_key = get_player_key('looser')
+
+    db[winner_key] = merge(db.get(winner_key, {}), match['winner'])
+    db[looser_key] = merge(db.get(looser_key, {}), match['looser'])
 
 if __name__ == '__main__':
-    run(matches_per_tournament, matches_per_tournaments)
+    run(matches_per_tournament, matches_per_tournaments, match_detail)
