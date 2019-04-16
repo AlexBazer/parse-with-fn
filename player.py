@@ -5,9 +5,19 @@ from toolz.curried import *
 from request import request_html
 from pq import *
 from utils import *
-from db import db
+from db import db, get_player_keys
 
-def player_detail(key, from_cache=False):
+def players_details(from_cache=True):
+    """Parse additional player info.
+
+    For now if player was already parsed with player_detail parser, simply skip him
+    """
+    for key in get_player_keys():
+        # if get_in([key, 'birth_date'])(db):
+        #     return
+        player_detail(key)
+
+def player_detail(key, from_cache=True):
     player = db[key]
     url = player['url']
 
@@ -19,7 +29,7 @@ def player_detail(key, from_cache=False):
 
     get_basic_detail = compose(
         dict,
-        curry(zip, ['birth-date', 'turned_pro', 'weight', 'height']),
+        curry(zip, ['birth_date', 'turned_pro', 'weight', 'height']),
         juxt(
             compose(
                 str_replace('.', '-'),
@@ -55,4 +65,4 @@ def player_detail(key, from_cache=False):
 
 
 if __name__ == '__main__':
-    run(player_detail)
+    run(player_detail, players_details)

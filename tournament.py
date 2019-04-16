@@ -1,3 +1,4 @@
+from urllib.parse import urlencode
 from datetime import datetime
 from clize import run
 from toolz.curried import *
@@ -11,15 +12,28 @@ import log
 
 
 def tournaments_per_year(year, from_cache=True):
+    tournaments_url = 'https://www.atptour.com/en/scores/results-archive?'
+
+    major_tournaments = tournaments_url + urlencode({
+        'year': year,
+    })
+    _tournaments_per_year(major_tournaments, year, from_cache=from_cache)
+
+    challenge_tournaments = tournaments_url + urlencode({
+        'year': year,
+        'tournamentType': 'ch'
+    })
+    _tournaments_per_year(challenge_tournaments, year, from_cache=from_cache)
+
+
+def _tournaments_per_year(url, year, from_cache=True):
     """
     Parse tournaments list for a specific year and store data per tournament
 
+    :param url:
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    url = 'https://www.atptour.com/en/scores/results-archive?year={}'.format(
-        year)
-
     q = PyQuery(request_html(url, from_cache=from_cache))
 
     get_name = compose(
@@ -122,7 +136,7 @@ def tournaments_details(year, from_cache=True):
 
 def tournament_detail(key, from_cache=True):
     tournament = db[key]
-    html = request_html(tournament['url'])
+    html = request_html(tournament['url'], from_cache=from_cache)
 
     get_dates = compose(
         map(lambda date: datetime(*date).date()),
