@@ -43,8 +43,9 @@ def _tournaments_per_year(url, year, from_cache=True):
         pq_find('.tourney-title'),
     )
     get_location = compose(
+        lambda location: [None, location[0]] if len(location) == 1 else location,
         list,
-        map(str.strip),
+        map(str_strip),
         str_split(','),
         pq_text,
         pq_find('.tourney-location')
@@ -53,7 +54,7 @@ def _tournaments_per_year(url, year, from_cache=True):
         datetime.isocalendar,
         lambda date: datetime(*date),
         map(int),
-        map(str.strip),
+        map(str_split),
         str_split('.'),
         pq_text,
         pq_find('.tourney-dates')
