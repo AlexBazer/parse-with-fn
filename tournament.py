@@ -43,9 +43,9 @@ def _tournaments_per_year(url, year, from_cache=True):
         pq_find('.tourney-title'),
     )
     get_location = compose(
-        lambda location: [None, location[0]] if len(location) == 1 else location,
+        lambda location: [None, location[0]] if len(location) == 1 else [location[0], location[-1]],
         list,
-        map(str_strip),
+        map(str.strip),
         str_split(','),
         pq_text,
         pq_find('.tourney-location')
@@ -54,7 +54,7 @@ def _tournaments_per_year(url, year, from_cache=True):
         datetime.isocalendar,
         lambda date: datetime(*date),
         map(int),
-        map(str_split),
+        map(str.strip),
         str_split('.'),
         pq_text,
         pq_find('.tourney-dates')
@@ -138,13 +138,15 @@ def tournaments_details(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    log.debug('Parse tournament details: {}'.format(year))
+    log.debug('Parse tournaments details: {}'.format(year))
     [tournament_detail(key, from_cache=from_cache) for key in get_tournament_keys(year)]
 
 
 def tournament_detail(key, from_cache=True):
     tournament = db[key]
     url = tournament['url']
+    log.debug('{}:{} parse tournament detail'.format(key, url))
+
     html = request_html(url, from_cache=from_cache)
 
     get_dates = compose(
@@ -164,7 +166,7 @@ def tournament_detail(key, from_cache=True):
         date_end=date_end,
     )
 
-    db[key] = merge(tournament)(result)
+    db[key] = merge(tournament, result)
     track_lacked(key, url, result)
 
 if __name__ == '__main__':

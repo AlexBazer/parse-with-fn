@@ -47,6 +47,8 @@ get_player_code = compose(
 def matches_per_tournament(key, from_cache=True):
     tournament = db[key]
     url = tournament['url']
+    log.debug('{}:{} parse matches per tournament'.format(key, url))
+
     q = PyQuery(request_html(url, from_cache=from_cache))
 
     def get_left_right(default): return juxt(
@@ -199,6 +201,8 @@ def matches_details(year, from_cache=True):
 def match_detail(key, from_cache=True):
     match = db[key]
     url = match['url']
+    log.debug('{}:{} parse match detail'.format(key, url))
+
     if not url:
         log.warning('{} match does not have details'.format(key))
         return

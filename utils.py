@@ -22,7 +22,7 @@ def track_lacked(key, url, data):
     if all(data.values()):
         return
 
-    called_function = str(inspect.stack()[1].function)
+    called_function = str(inspect.stack()[1][3])
 
     log.warning('{} | {}:{} lacks {} \n {}'.format(
         called_function, key, url,

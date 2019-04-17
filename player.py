@@ -21,6 +21,7 @@ def players_details(from_cache=True):
 def player_detail(key, from_cache=True):
     player = db[key]
     url = player['url']
+    log.debug('{}:{} parse player detail'.format(key, url))
 
     if not url:
         log.warning('{} player does not have details'.format(key))
