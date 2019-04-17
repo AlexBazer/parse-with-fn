@@ -25,6 +25,7 @@ def matches_per_tournaments(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
+    log.debug('Parse matches per tournaments: {}'.format(year))
     [matches_per_tournament(key, from_cache=from_cache)
      for key in get_tournament_keys(year)]
 
@@ -185,16 +186,13 @@ def matches_per_tournament(key, from_cache=True):
         return result
 
     for match in q.find('.day-table tbody tr'):
-        try:
-            result = get_match(match)
-        except:
-            log.error('Error in: {}:{} tournament, with next match data: {}'.format(
-                key, url, ' '.join(pq_text(match).split())))
-            raise
+        result = get_match(match)
         db[build_match_key(result)] = result
+        track_lacked(build_match_key(result), url, result)
 
 
 def matches_details(year, from_cache=True):
+    log.debug('Parse matches details: {}'.format(year))
     [match_detail(key, from_cache) for key in get_match_keys(year)]
 
 
@@ -288,6 +286,7 @@ def match_detail(key, from_cache=True):
     match['duration'] = get_time(q)
     match['stats'] = get_players_stats(q)
     db[key] = match
+    track_lacked(key, url, match)
 
     # collect players info
     get_player_key = lambda status: build_player_key(
@@ -297,7 +296,9 @@ def match_detail(key, from_cache=True):
     looser_key = get_player_key('looser')
 
     db[winner_key] = merge(db.get(winner_key, {}), match['winner'])
+    track_lacked(winner_key, url, match['winner'])
     db[looser_key] = merge(db.get(looser_key, {}), match['looser'])
+    track_lacked(looser_key, url, match['looser'])
 
 if __name__ == '__main__':
     run(matches_per_tournament, matches_per_tournaments, match_detail)

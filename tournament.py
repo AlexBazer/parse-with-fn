@@ -17,12 +17,14 @@ def tournaments_per_year(year, from_cache=True):
     major_tournaments = tournaments_url + urlencode({
         'year': year,
     })
+    log.debug('Parse major tournaments: {}'.format(year))
     _tournaments_per_year(major_tournaments, year, from_cache=from_cache)
 
     challenge_tournaments = tournaments_url + urlencode({
         'year': year,
         'tournamentType': 'ch'
     })
+    log.debug('Parse challenge tournaments: {}'.format(year))
     _tournaments_per_year(challenge_tournaments, year, from_cache=from_cache)
 
 
@@ -91,7 +93,6 @@ def _tournaments_per_year(url, year, from_cache=True):
         pq_find('td img')
     )
 
-    result = {}
     for one_result in q.find('.tourney-result'):
         url = get_url(one_result)
         name = get_name(one_result)
@@ -106,7 +107,7 @@ def _tournaments_per_year(url, year, from_cache=True):
         surface_type, surface = get_surface(one_result)
         category = get_category(one_result)
 
-        one = dict(
+        result = dict(
             slug=slug,
             code=code,
             name=name,
@@ -119,8 +120,14 @@ def _tournaments_per_year(url, year, from_cache=True):
             surface=surface,
             category=category,
         )
-        log.info('{} {} is parsed'.format(name, year))
-        db[build_tournament_key(year, slug, code)] = one
+        if not all(result.values()):
+            log.warning('{}:{} lacks {}'.format(
+                build_tournament_key(year, slug, code), url,
+                [key for key, value in result.items() if not value]
+            ))
+        key = build_tournament_key(year, slug, code)
+        db[key] = result
+        track_lacked(key, url, result)
 
 
 def tournaments_details(year, from_cache=True):
@@ -130,13 +137,14 @@ def tournaments_details(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-
+    log.debug('Parse tournament details: {}'.format(year))
     [tournament_detail(key, from_cache=from_cache) for key in get_tournament_keys(year)]
 
 
 def tournament_detail(key, from_cache=True):
     tournament = db[key]
-    html = request_html(tournament['url'], from_cache=from_cache)
+    url = tournament['url']
+    html = request_html(url, from_cache=from_cache)
 
     get_dates = compose(
         map(lambda date: datetime(*date).date()),
@@ -150,14 +158,13 @@ def tournament_detail(key, from_cache=True):
 
     date_start, date_end = get_dates(html)
 
-    db[key] = dict(
-        tournament,
+    result = dict(
         date_start=date_start,
         date_end=date_end,
     )
-    log.info('{} {} parse additional data'.format(
-        tournament['name'], tournament['year']))
 
+    db[key] = merge(tournament)(result)
+    track_lacked(key, url, result)
 
 if __name__ == '__main__':
     run(tournaments_per_year, tournaments_details, tournament_detail)

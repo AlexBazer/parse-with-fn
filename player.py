@@ -12,6 +12,7 @@ def players_details(from_cache=True):
 
     For now if player was already parsed with player_detail parser, simply skip him
     """
+    log.debug('Parse players details')
     for key in get_player_keys():
         # if get_in([key, 'birth_date'])(db):
         #     return
@@ -58,11 +59,10 @@ def player_detail(key, from_cache=True):
         pq_find('.player-profile-hero-table tr:first-child td')
     )
 
-    basic_detail = get_basic_detail(q)
+    result = get_basic_detail(q)
 
-    db[key] = merge(player, basic_detail)
-    # Correct country
-
+    db[key] = merge(player, result)
+    track_lacked(key, url, result)
 
 if __name__ == '__main__':
     run(player_detail, players_details)
