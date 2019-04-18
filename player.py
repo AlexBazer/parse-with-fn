@@ -12,7 +12,7 @@ def players_details(from_cache=True):
 
     For now if player was already parsed with player_detail parser, simply skip him
     """
-    log.debug('Parse players details')
+    log.info('Parse players details')
     for key in get_player_keys():
         # if get_in([key, 'birth_date'])(db):
         #     return

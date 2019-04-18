@@ -1,3 +1,5 @@
 .vscode
 Pipfile
 Pipfile.lock
+*.log
+*.db

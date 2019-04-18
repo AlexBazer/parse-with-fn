@@ -1,6 +1,6 @@
 import inspect
 import log
-from pprint import pprint
+from pprint import pformat
 from toolz.curried import flip, curry, partial
 from operator import add as default_add, ge as default_ge, le as default_le
 
@@ -19,13 +19,14 @@ def str_replace(before, after):
 
 
 def track_lacked(key, url, data):
-    if all(data.values()):
+    lack_keys = [key for key, value in data.items() if not value and key not in ['seed']]
+    if not lack_keys:
         return
 
     called_function = str(inspect.stack()[1][3])
 
     log.warning('{} | {}:{} lacks {} \n {}'.format(
         called_function, key, url,
-        [key for key, value in data.items() if not value],
-        pprint(data)
+        lack_keys,
+        pformat(data)
     ))

@@ -1,4 +1,8 @@
+import logging
+import logzero
 from logzero import logger
+
+logzero.logfile('./runner.log', loglevel=logging.WARNING)
 
 def debug(msg):
     logger.debug(msg)

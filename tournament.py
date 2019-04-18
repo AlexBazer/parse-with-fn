@@ -17,14 +17,14 @@ def tournaments_per_year(year, from_cache=True):
     major_tournaments = tournaments_url + urlencode({
         'year': year,
     })
-    log.debug('Parse major tournaments: {}'.format(year))
+    log.info('Parse major tournaments: {}'.format(year))
     _tournaments_per_year(major_tournaments, year, from_cache=from_cache)
 
     challenge_tournaments = tournaments_url + urlencode({
         'year': year,
         'tournamentType': 'ch'
     })
-    log.debug('Parse challenge tournaments: {}'.format(year))
+    log.info('Parse challenge tournaments: {}'.format(year))
     _tournaments_per_year(challenge_tournaments, year, from_cache=from_cache)
 
 
@@ -138,7 +138,7 @@ def tournaments_details(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    log.debug('Parse tournaments details: {}'.format(year))
+    log.info('Parse tournaments details: {}'.format(year))
     [tournament_detail(key, from_cache=from_cache) for key in get_tournament_keys(year)]
 
 

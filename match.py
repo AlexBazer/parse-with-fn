@@ -25,7 +25,7 @@ def matches_per_tournaments(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    log.debug('Parse matches per tournaments: {}'.format(year))
+    log.info('Parse matches per tournaments: {}'.format(year))
     [matches_per_tournament(key, from_cache=from_cache)
      for key in get_tournament_keys(year)]
 
@@ -62,7 +62,7 @@ def matches_per_tournament(key, from_cache=True):
         list, map(get_player_seed), pq_find('.day-table-seed'))
 
     get_player_country = compose(
-        flip(get)(countries_code_map),
+        flip(get(default=None))(countries_code_map),
         str.upper,
         get(0),
         str_split('.'),
@@ -123,6 +123,7 @@ def matches_per_tournament(key, from_cache=True):
         ' '.join,
         map(parse_set_score),
         str_split(' '),
+        str_strip('()'),
         pq_text,
         pq_find('.day-table-score')
     )
@@ -189,18 +190,24 @@ def matches_per_tournament(key, from_cache=True):
 
     for match in q.find('.day-table tbody tr'):
         result = get_match(match)
-        db[build_match_key(result)] = result
-        track_lacked(build_match_key(result), url, result)
+        match_key = build_match_key(result)
+        db[match_key] = result
+        track_lacked(match_key, url, result)
 
 
 def matches_details(year, from_cache=True):
-    log.debug('Parse matches details: {}'.format(year))
+    log.info('Parse matches details: {}'.format(year))
     [match_detail(key, from_cache) for key in get_match_keys(year)]
 
 
 def match_detail(key, from_cache=True):
     match = db[key]
     url = match['url']
+
+    # Pass matches without url
+    if not url:
+        return
+
     log.debug('{}:{} parse match detail'.format(key, url))
 
     if not url:

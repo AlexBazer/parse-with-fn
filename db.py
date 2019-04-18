@@ -2,7 +2,7 @@ from clize import run
 from sqlitedict import SqliteDict
 from pprint import pprint
 from toolz.curried import *
-from utils import str_startswith
+from utils import *
 import log
 
 db = SqliteDict('atp.db', autocommit=True)
@@ -30,6 +30,11 @@ def get_tournament_keys(year):
 
 
 def build_match_key(match):
+    get_default_code = compose(
+        ''.join,
+        mapcat(str_split(' ')),
+        juxt(get_in(['winner', 'full_name']), get_in(['looser', 'full_name']))
+    )
     return compose(
         '|'.join,
         map(str),
@@ -39,7 +44,7 @@ def build_match_key(match):
             get('tournament_year'),
             get('tournament_slug'),
             get('tournament_code'),
-            get('code'),
+            lambda match: get('code')(match) or get_default_code(match)
         )(match)
     ))
 

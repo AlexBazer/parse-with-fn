@@ -1,10 +1,15 @@
+import logging
+import logzero
 from clize import run
 
 from tournament import tournaments_per_year, tournaments_details
 from match import matches_per_tournaments, matches_details
 from player import players_details
 
-def main(year, from_cache=True):
+def main(year, debug=True, from_cache=True):
+    if not debug:
+        logzero.loglevel(logging.INFO)
+
     tournaments_per_year(year, from_cache=from_cache)
     tournaments_details(year, from_cache=from_cache)
 
