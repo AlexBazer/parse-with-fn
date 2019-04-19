@@ -6,6 +6,8 @@ from request import request_html
 from pq import *
 from utils import *
 from db import db, get_player_keys
+from enlighten import Counter
+
 
 def players_details(from_cache=True):
     """Parse additional player info.
@@ -13,10 +15,13 @@ def players_details(from_cache=True):
     For now if player was already parsed with player_detail parser, simply skip him
     """
     log.info('Parse players details')
-    for key in get_player_keys():
-        # if get_in([key, 'birth_date'])(db):
-        #     return
+    keys = list(get_player_keys())
+
+    progress = Counter(total=len(keys), desc='Parse players details')
+    for key in keys:
         player_detail(key)
+        progress.update()
+
 
 def player_detail(key, from_cache=True):
     player = db[key]
@@ -64,6 +69,7 @@ def player_detail(key, from_cache=True):
 
     db[key] = merge(player, result)
     track_lacked(key, url, result)
+
 
 if __name__ == '__main__':
     run(player_detail, players_details)

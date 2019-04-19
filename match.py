@@ -9,7 +9,8 @@ from utils import *
 from db import db, build_match_key, reverse_tournament_key, get_match_keys, get_tournament_keys, build_player_key
 from countries import countries_code_map
 import log
-from pprint import pprint
+from enlighten import Counter
+
 
 def resolve_url(url):
     if url and url != '#':
@@ -25,9 +26,13 @@ def matches_per_tournaments(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    log.info('Parse matches per tournaments: {}'.format(year))
-    [matches_per_tournament(key, from_cache=from_cache)
-     for key in get_tournament_keys(year)]
+    keys = list(get_tournament_keys(year))
+
+    progress = Counter(
+        total=len(keys), desc='Parse matches per tournaments: {}'.format(year))
+    for key in get_tournament_keys(year):
+        matches_per_tournament(key, from_cache=from_cache)
+        progress.update()
 
 
 split_player_url = compose(
@@ -197,7 +202,14 @@ def matches_per_tournament(key, from_cache=True):
 
 def matches_details(year, from_cache=True):
     log.info('Parse matches details: {}'.format(year))
-    [match_detail(key, from_cache) for key in get_match_keys(year)]
+
+    keys = list(get_match_keys(year))
+
+    progress = Counter(
+        total=len(keys), desc='Parse matches details: {}'.format(year))
+    for key in keys:
+        match_detail(key, from_cache)
+        progress.update()
 
 
 def match_detail(key, from_cache=True):
@@ -300,7 +312,7 @@ def match_detail(key, from_cache=True):
     track_lacked(key, url, match)
 
     # collect players info
-    get_player_key = lambda status: build_player_key(
+    def get_player_key(status): return build_player_key(
         *juxt(get_in([status, 'slug']), get_in([status, 'code']))(match)
     )
     winner_key = get_player_key('winner')
@@ -310,6 +322,7 @@ def match_detail(key, from_cache=True):
     track_lacked(winner_key, url, match['winner'])
     db[looser_key] = merge(db.get(looser_key, {}), match['looser'])
     track_lacked(looser_key, url, match['looser'])
+
 
 if __name__ == '__main__':
     run(matches_per_tournament, matches_per_tournaments, match_detail)
