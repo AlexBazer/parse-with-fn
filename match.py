@@ -9,7 +9,6 @@ from utils import *
 from db import db, build_match_key, reverse_tournament_key, get_match_keys, get_tournament_keys, build_player_key
 from countries import countries_code_map
 import log
-from enlighten import Counter
 
 
 def resolve_url(url):
@@ -26,13 +25,13 @@ def matches_per_tournaments(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    keys = list(get_tournament_keys(year))
+    log.info('Parse matches per tournaments: {}'.format(year))
 
-    progress = Counter(
-        total=len(keys), desc='Parse matches per tournaments: {}'.format(year))
-    for key in get_tournament_keys(year):
-        matches_per_tournament(key, from_cache=from_cache)
-        progress.update()
+    run_in_pool(
+        curry(matches_per_tournament, from_cache=from_cache),
+        get_tournament_keys(year),
+        'Parse matches per tournaments: {}'.format(year)
+    )
 
 
 split_player_url = compose(
@@ -49,6 +48,7 @@ get_player_code = compose(
 )
 
 
+@log_exception
 def matches_per_tournament(key, from_cache=True):
     tournament = db[key]
     url = tournament['url']
@@ -203,15 +203,14 @@ def matches_per_tournament(key, from_cache=True):
 def matches_details(year, from_cache=True):
     log.info('Parse matches details: {}'.format(year))
 
-    keys = list(get_match_keys(year))
-
-    progress = Counter(
-        total=len(keys), desc='Parse matches details: {}'.format(year))
-    for key in keys:
-        match_detail(key, from_cache)
-        progress.update()
+    run_in_pool(
+        curry(match_detail, from_cache=from_cache),
+        get_match_keys(year),
+        'Parse matches details: {}'.format(year)
+    )
 
 
+@log_exception
 def match_detail(key, from_cache=True):
     match = db[key]
     url = match['url']

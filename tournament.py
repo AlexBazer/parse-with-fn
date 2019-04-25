@@ -3,13 +3,12 @@ from datetime import datetime
 from clize import run
 from toolz.curried import *
 from request import request_html
-from db import db, build_tournament_key, get_tournament_keys
+from db import db, build_tournament_key, get_tournament_keys, get_db
 from pq import *
 from utils import *
 from constants import ATP_PREFIX, tournament_category_map
 from countries import countries_code_map
 import log
-
 
 def tournaments_per_year(year, from_cache=True):
     tournaments_url = 'https://www.atptour.com/en/scores/results-archive?'
@@ -43,7 +42,8 @@ def _tournaments_per_year(url, year, from_cache=True):
         pq_find('.tourney-title'),
     )
     get_location = compose(
-        lambda location: [None, location[0]] if len(location) == 1 else [location[0], location[-1]],
+        lambda location: [None, location[0]] if len(location) == 1 else [
+            location[0], location[-1]],
         list,
         map(str.strip),
         str_split(','),
@@ -139,7 +139,12 @@ def tournaments_details(year, from_cache=True):
     :param from_cache: Take page html form db cache
     """
     log.info('Parse tournaments details: {}'.format(year))
-    [tournament_detail(key, from_cache=from_cache) for key in get_tournament_keys(year)]
+
+    run_in_pool(
+        curry(tournament_detail, from_cache=from_cache),
+        get_tournament_keys(year),
+        'Parse tournaments details: {}'.format(year),
+    )
 
 
 def tournament_detail(key, from_cache=True):
@@ -168,6 +173,7 @@ def tournament_detail(key, from_cache=True):
 
     db[key] = merge(tournament, result)
     track_lacked(key, url, result)
+
 
 if __name__ == '__main__':
     run(tournaments_per_year, tournaments_details, tournament_detail)

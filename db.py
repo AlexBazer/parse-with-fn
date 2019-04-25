@@ -1,12 +1,14 @@
 from clize import run
-from sqlitedict import SqliteDict
+from sqlitedict import SqliteDict, SqliteMultithread
 from pprint import pprint
 from toolz.curried import *
 from utils import *
 import log
 
-db = SqliteDict('atp.db', autocommit=True)
+db = SqliteDict('atp.db')
 
+def get_db():
+    return  SqliteDict('atp.db')
 
 def build_tournament_key(year, slug, code):
     return compose(
