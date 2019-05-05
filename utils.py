@@ -6,11 +6,25 @@ import log
 import inspect
 from gevent.pool import Pool
 from gevent import monkey
+from constants import ATP_PREFIX
+
 monkey.patch_all
 
 
-__all__ = ['str_split', 'str_startswith', 'str_strip', 'add',
-           'str_find', 'ge', 'le', 'str_replace', 'track_lacked', 'log_exception', 'run_in_pool']
+__all__ = [
+    "str_split",
+    "str_startswith",
+    "str_strip",
+    "add",
+    "str_find",
+    "ge",
+    "le",
+    "str_replace",
+    "track_lacked",
+    "log_exception",
+    "run_in_pool",
+    "resolve_url",
+]
 
 str_split = flip(str.split)
 str_startswith = flip(str.startswith)
@@ -26,18 +40,21 @@ def str_replace(before, after):
 
 
 def track_lacked(key, url, data):
-    lack_keys = [key for key, value in data.items() if not value and key not in [
-        'seed', 'code', 'url']]
+    lack_keys = [
+        key
+        for key, value in data.items()
+        if not value and key not in ["seed", "code", "url"]
+    ]
     if not lack_keys:
         return
 
     called_function = str(inspect.stack()[1][3])
 
-    log.warning('{} | {}:{} lacks {} \n {}'.format(
-        called_function, key, url,
-        lack_keys,
-        pformat(data)
-    ))
+    log.warning(
+        "{} | {}:{} lacks {} \n {}".format(
+            called_function, key, url, lack_keys, pformat(data)
+        )
+    )
 
 
 def log_exception(fn):
@@ -46,13 +63,16 @@ def log_exception(fn):
             res = fn(*args, **kwargs)
             return res
         except Exception as e:
-            log.error('{} was called with {}, {}. {}'.format(
-                fn.__name__, args, kwargs, str(e)))
+            log.error(
+                "{} was called with {}, {}. {}".format(
+                    fn.__name__, args, kwargs, str(e)
+                )
+            )
 
     return wrapper
 
 
-def run_in_pool(fn, iterable, desc='', pool_size=5):
+def run_in_pool(fn, iterable, desc="", pool_size=5):
     items = list(iterable)
     progress = Counter(total=len(items), desc=desc)
 
@@ -63,3 +83,10 @@ def run_in_pool(fn, iterable, desc='', pool_size=5):
     pool = Pool(pool_size)
 
     list(pool.imap(fn, items))
+
+
+def resolve_url(url):
+    if url and url != "#":
+        return ATP_PREFIX + url
+
+    return None
