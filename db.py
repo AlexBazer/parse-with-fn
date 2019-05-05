@@ -1,9 +1,21 @@
 from clize import run
+from redis import Redis
 from sqlitedict import SqliteDict, SqliteMultithread
 from pprint import pprint
 from toolz.curried import *
 from utils import *
 import log
+
+
+class RedisDB:
+    def __init__(self):
+        self.redis = Redis()
+
+    def get(self, key):
+        return self.redis.get(key)
+
+    def set(self, key, value):
+        self.redis.set(key, value)
 
 db = SqliteDict('atp.db')
 
