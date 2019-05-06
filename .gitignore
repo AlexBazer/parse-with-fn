@@ -4,3 +4,4 @@ Pipfile.lock
 *.log
 *.db
 redis_db
+.env
