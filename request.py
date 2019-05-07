@@ -9,7 +9,7 @@ def request_html(url, from_cache=True):
         log.debug('Request {}'.format(url))
         response = requests.get(url)
         html = response.text
-        db[url] = html
+        db.set(url, html)
 
     return html
 

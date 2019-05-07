@@ -8,6 +8,7 @@ from constants import ATP_PREFIX, tournament_category_map
 from countries import countries_code_map
 import log
 
+
 def tournaments_list(url, from_cache=True):
     html = request_html(url, from_cache=from_cache)
 
@@ -69,6 +70,7 @@ def tournaments_list(url, from_cache=True):
         category = get_category(element)
 
         return dict(
+            id=f"{year}-{code}",
             slug=slug,
             code=code,
             name=name,
@@ -102,10 +104,11 @@ def tournament_detail(url, from_cache=True):
         pq_text,
         pq_find(".tourney-result .tourney-dates"),
     )
-
-    date_start, date_end = get_dates(html)
-
-    return dict(date_start=date_start, date_end=date_end)
+    try:
+        date_start, date_end = get_dates(html)
+        return dict(date_start=date_start, date_end=date_end)
+    except ValueError:
+        return {}
 
 
 split_player_url = compose(str_split("/"), pq_attr("href"))
@@ -318,7 +321,7 @@ def player_detail(url, from_cache=True):
         country = countries_code_map.get(text)
 
         if not country:
-            log.warning(f'Country code {text} for player url:{url} not found')
+            log.warning(f"Country code {text} for player url:{url} not found")
             return None
         return country
 
@@ -332,4 +335,11 @@ def player_detail(url, from_cache=True):
 
 
 if __name__ == "__main__":
-    run(tournaments_list, tournament_detail, matches_list_per_tournament, match_detail, player_detail)
+    run(
+        tournaments_list,
+        tournament_detail,
+        matches_list_per_tournament,
+        match_detail,
+        player_detail,
+    )
+
