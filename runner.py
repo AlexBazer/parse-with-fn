@@ -3,9 +3,8 @@ import logzero
 from clize import run
 from toolz.curried import *
 from urllib.parse import urlencode
+from utils import run_in_pool
 
-from match import matches_per_tournaments, matches_details
-from player import players_details
 from page_parser import *
 from db import db, build_tournament_key, get_tournament_keys
 
@@ -14,7 +13,7 @@ def main(year, debug=True, from_cache=True):
     if not debug:
         logzero.loglevel(logging.INFO)
 
-    # tournaments_per_year(year, from_cache=from_cache)
+    tournaments_per_year(year, from_cache=from_cache)
     tournaments_details(year, from_cache=from_cache)
 
     # matches_per_tournaments(year, from_cache=from_cache)

@@ -4,7 +4,6 @@ from redis import Redis
 from sqlitedict import SqliteDict, SqliteMultithread
 from pprint import pprint
 from toolz.curried import *
-from utils import *
 import log
 
 
@@ -12,17 +11,23 @@ class RedisDB:
     def __init__(self):
         self.redis = Redis()
 
-    def get(self, key):
+    def get(self, key, raw=False):
         value = self.redis.get(key)
         if value is not None:
-            return pickle.loads(value)
+            return pickle.loads(value) if not raw else value
         return None
 
-    def set(self, key, value):
-        self.redis.set(key, pickle.dumps(value))
+    def set(self, key, value, ex=None):
+        self.redis.set(key, pickle.dumps(value), ex=ex)
+
+    def incr(self, key):
+        self.redis.incr(key)
 
     def keys(self, pattern):
         return self.redis.keys(pattern)
+
+    def delete(self, key):
+        return self.redis.delete(key)
 
 
 db = RedisDB()
@@ -46,7 +51,7 @@ def get_tournament_keys(year):
 
     :param year: Tournament year
     """
-    return db.keys("|".join(["tournaments", str(year), '*']))
+    return db.keys("|".join(["tournaments", str(year), "*"]))
 
 
 def build_match_key(match):
