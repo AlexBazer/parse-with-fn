@@ -7,7 +7,7 @@ from utils import run_in_pool
 from utils.browser import close_browsers
 
 from page_parser import *
-from db import db, build_tournament_key, get_tournament_keys
+from db import db, build_tournament_key, get_tournament_keys, build_match_key
 
 
 def main(year, debug=True, from_cache=True):
@@ -16,14 +16,15 @@ def main(year, debug=True, from_cache=True):
 
     try:
         # tournaments_per_year(year, from_cache=from_cache)
-        tournaments_details(year, from_cache=from_cache)
+        # tournaments_details(year, from_cache=from_cache)
 
-        # matches_per_tournaments(year, from_cache=from_cache)
+        matches_per_tournaments(year, from_cache=from_cache)
         # matches_details(year, from_cache=from_cache)
 
         # players_details(from_cache=from_cache)
     finally:
         close_browsers()
+
 
 def tournaments_per_year(year, from_cache=True):
     tournaments_url = "https://www.atptour.com/en/scores/results-archive?"
@@ -65,11 +66,35 @@ def tournaments_details(year, from_cache=True):
 
 
 def update_tournament_details(key, from_cache=True):
-    tournament = db.get(key)
+    tournament = db.get(key) or {}
     db.set(
         key,
         merge(tournament, tournament_detail(tournament["url"], from_cache=from_cache)),
     )
+
+
+def matches_per_tournaments(year, from_cache=True):
+    log.info("Parse matches per tournaments: {}".format(year))
+
+    run_in_pool(
+        curry(update_match_details, from_cache=from_cache),
+        get_tournament_keys(year),
+        "Parse matches per tournaments: {}".format(year),
+    )
+
+
+def update_match_details(key, from_cache=True):
+    tournament = db.get(key)
+    matches = matches_list_per_tournament(tournament["url"], from_cache=from_cache)
+    for item in matches:
+        item = dict(
+            item,
+            tournament_year=tournament["year"],
+            tournament_slug=tournament["slug"],
+            tournament_code=tournament["code"],
+        )
+        match_key = build_match_key(item)
+        db.set(match_key, merge(db.get(match_key), item))
 
 
 if __name__ == "__main__":

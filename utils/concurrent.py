@@ -9,8 +9,13 @@ from progressbar import ProgressBar
 from db import db
 
 
-def run_in_pool(fn, iterable, desc="", pool_size=2):
+def run_in_pool(fn, iterable, desc="", pool_size=2, debug=False):
     items = list(iterable)
+
+    if debug:
+        # Run in same process for debug mode
+        [fn(item) for item in items]
+        return
 
     pool = Pool(pool_size)
 
