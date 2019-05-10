@@ -4,6 +4,7 @@ from clize import run
 from toolz.curried import *
 from urllib.parse import urlencode
 from utils import run_in_pool
+from utils.browser import close_browsers
 
 from page_parser import *
 from db import db, build_tournament_key, get_tournament_keys
@@ -13,14 +14,16 @@ def main(year, debug=True, from_cache=True):
     if not debug:
         logzero.loglevel(logging.INFO)
 
-    tournaments_per_year(year, from_cache=from_cache)
-    tournaments_details(year, from_cache=from_cache)
+    try:
+        # tournaments_per_year(year, from_cache=from_cache)
+        tournaments_details(year, from_cache=from_cache)
 
-    # matches_per_tournaments(year, from_cache=from_cache)
-    # matches_details(year, from_cache=from_cache)
+        # matches_per_tournaments(year, from_cache=from_cache)
+        # matches_details(year, from_cache=from_cache)
 
-    # players_details(from_cache=from_cache)
-
+        # players_details(from_cache=from_cache)
+    finally:
+        close_browsers()
 
 def tournaments_per_year(year, from_cache=True):
     tournaments_url = "https://www.atptour.com/en/scores/results-archive?"

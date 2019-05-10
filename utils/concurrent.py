@@ -8,6 +8,7 @@ from progressbar import ProgressBar
 
 from db import db
 
+
 def run_in_pool(fn, iterable, desc="", pool_size=2):
     items = list(iterable)
 
@@ -20,11 +21,10 @@ def run_in_pool(fn, iterable, desc="", pool_size=2):
     monitor.start()
 
     try:
-        result = list(pool.imap(fn, items))
-        return result
+        return list(pool.imap(fn, items))
     finally:
         db.delete(monitor_name)
-        monitor.close()
+        monitor.terminate()
 
 
 def _monitor(fn_name, max_value, desc=""):

@@ -1,7 +1,6 @@
 from datetime import datetime
 from clize import run
 from toolz.curried import *
-from request import request_html
 from pq import *
 from utils import *
 from constants import ATP_PREFIX, tournament_category_map
