@@ -79,7 +79,7 @@ def get_match_keys(year):
 
     :params year: Tournament year
     """
-    return filter(str_startswith("|".join(["match", year])))(db.keys())
+    return db.keys("|".join(["match", year, "*"]))
 
 
 def build_player_key(slug, code):
@@ -87,7 +87,7 @@ def build_player_key(slug, code):
 
 
 def get_player_keys():
-    return filter(str_startswith("player"))(db.keys())
+    return db.keys('player*')
 
 
 def get_tournament(key):
