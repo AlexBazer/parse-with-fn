@@ -248,5 +248,5 @@ countries_code_map = {
     "ROT": "Refugee Olympic Team",
     "IPP": "Independent Paralympic Participants",
     "IPA": "Individual Paralympic Athletes",
-    "NPA": "Neutral Paralympic Athletes"
-  }
+    "NPA": "Neutral Paralympic Athletes",
+}

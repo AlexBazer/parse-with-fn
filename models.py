@@ -7,9 +7,9 @@ load_dotenv()
 db = orm.Database()
 db.bind(
     provider="oracle",
-    user=os.getenv('DB_USERNAME'),
-    password=os.getenv('DB_PASSWORD'),
-    dsn=os.getenv('DB_DSN'),
+    user=os.getenv("DB_USERNAME"),
+    password=os.getenv("DB_PASSWORD"),
+    dsn=os.getenv("DB_DSN"),
 )
 
 

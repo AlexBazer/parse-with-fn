@@ -4,8 +4,15 @@ from multiprocessing import Queue
 
 browser_connections = Queue()
 
+
 def put_browser_back(browser):
-    browser_connections.put({'session_id': browser.session_id , 'executor_url': browser.command_executor._url})
+    browser_connections.put(
+        {
+            "session_id": browser.session_id,
+            "executor_url": browser.command_executor._url,
+        }
+    )
+
 
 def get_browser():
     if browser_connections.empty():
@@ -42,8 +49,8 @@ def get_remote_browser(session_id, executor_url):
 
     return new_driver
 
+
 def close_browsers():
     while not browser_connections.empty():
         browser_connect = browser_connections.get()
         get_remote_browser(**browser_connect).quit()
-

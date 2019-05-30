@@ -124,23 +124,6 @@ def matches_list_per_tournament(url, from_cache=True):
     get_player_seed = compose(str_strip("()"), pq_text)
     get_players_seed = compose(list, map(get_player_seed), pq_find(".day-table-seed"))
 
-    # TODO Log non recognized country
-    get_player_country = compose(
-        flip(get(default=None))(countries_code_map),
-        str.upper,
-        get(0),
-        str_split("."),
-        get(-1),
-        str_split("/"),
-        pq_attr("src"),
-    )
-    get_players_country = compose(
-        get_left_right(None),
-        list,
-        map(get_player_country),
-        pq_find(".day-table-flag img"),
-    )
-
     get_is_winner_left = compose(
         lambda result: result == "Defeats",
         pq_text,
@@ -187,7 +170,6 @@ def matches_list_per_tournament(url, from_cache=True):
 
     def get_match(match):
         left_seed, right_seed = get_players_seed(match)
-        left_country, right_country = get_players_country(match)
         is_winner_left = get_is_winner_left(match)
         left_player, right_player = get_players_details(match)
         score = get_score(match)
@@ -195,8 +177,8 @@ def matches_list_per_tournament(url, from_cache=True):
         code = get_match_code(match)
         order = get_match_order(match)
 
-        left = dict(seed=left_seed, country=left_country, **left_player)
-        right = dict(seed=right_seed, country=right_country, **right_player)
+        left = dict(seed=left_seed, **left_player)
+        right = dict(seed=right_seed, **right_player)
         result = dict(score=score, code=code, order=order, url=url)
         if is_winner_left:
             result["winner"] = left
@@ -212,6 +194,10 @@ def matches_list_per_tournament(url, from_cache=True):
 
 def match_detail(url, from_cache=True):
     html = request_html(url, from_cache=from_cache)
+
+    if not pq_find(".match-stats-page")(html):
+        log.warning(f"Match page is empty {url}")
+        return {}
 
     # Get complete players data and fix it in current match object
     get_player_details = excepts(
@@ -341,4 +327,3 @@ if __name__ == "__main__":
         match_detail,
         player_detail,
     )
-

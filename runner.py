@@ -10,10 +10,11 @@ from page_parser import *
 from db import (
     db,
     build_tournament_key,
-    get_tournament_keys,
     build_match_key,
+    build_player_key,
+    get_tournament_keys,
     get_match_keys,
-    get_player_keys
+    get_player_keys,
 )
 
 
@@ -25,7 +26,7 @@ def main(year, debug=True, from_cache=True):
         # tournaments_per_year(year, from_cache=from_cache)
         # tournaments_details(year, from_cache=from_cache)
 
-        # matches_per_tournaments(year, from_cache=from_cache)
+        matches_per_tournaments(year, from_cache=from_cache)
         # matches_details(year, from_cache=from_cache)
 
         players_details(from_cache=from_cache)
@@ -106,7 +107,22 @@ def update_matches_per_tournament_details(key, from_cache=True):
             tournament_code=tournament["code"],
         )
         match_key = build_match_key(item)
-        db.set(match_key, merge(db.get(match_key) or {}, item))
+        merged_item = merge(db.get(match_key) or {}, item)
+        db.set(match_key, merged_item)
+
+        player = merged_item["winner"]
+        if player.get("url"):
+            player_key = build_player_key(player["slug"], player["code"])
+            db.set(player_key, player)
+        else:
+            log.warning(f"Player without link, {url} {player}")
+
+        player = merged_item["looser"]
+        if player.get("url"):
+            player_key = build_player_key(player["slug"], player["code"])
+            db.set(player_key, player)
+        else:
+            log.warning(f"Player without link, {url} {player}")
 
 
 def matches_details(year, from_cache=True):
@@ -134,17 +150,18 @@ def players_details(from_cache=True):
 
     For now if player was already parsed with player_detail parser, simply skip him
     """
-    log.info('Parse players details')
+    log.info("Parse players details")
 
     run_in_pool(
         curry(update_player, from_cache=from_cache),
         get_player_keys(),
-        'Parse players details'
+        "Parse players details",
     )
 
+
 def update_player(key, from_cache=True):
-    player = db.get('key') or {}
-    url = player['url']
+    player = db.get(key) or {}
+    url = player["url"]
     if not url:
         return
 

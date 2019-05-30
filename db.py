@@ -87,15 +87,7 @@ def build_player_key(slug, code):
 
 
 def get_player_keys():
-    return db.keys('player*')
-
-
-def get_tournament(key):
-    try:
-        return db[key]
-    except KeyError:
-        log.error("Key not found")
-        return {}
+    return db.keys("player*")
 
 
 def get_by_key(key):
@@ -105,7 +97,6 @@ def get_by_key(key):
 if __name__ == "__main__":
     run(
         compose(pprint, list, get_tournament_keys),
-        compose(pprint, get_tournament),
         build_tournament_key,
         build_match_key,
         compose(pprint, list, get_match_keys),

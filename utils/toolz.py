@@ -23,4 +23,3 @@ le = curry(default_le)
 
 def str_replace(before, after):
     return lambda s: str.replace(s, before, after)
-

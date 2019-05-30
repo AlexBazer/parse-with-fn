@@ -10,20 +10,18 @@ from constants import ATP_PREFIX, tournament_category_map
 from countries import countries_code_map
 import log
 
-def tournaments_per_year(year, from_cache=True):
-    tournaments_url = 'https://www.atptour.com/en/scores/results-archive?'
 
-    major_tournaments = tournaments_url + urlencode({
-        'year': year,
-    })
-    log.info('Parse major tournaments: {}'.format(year))
+def tournaments_per_year(year, from_cache=True):
+    tournaments_url = "https://www.atptour.com/en/scores/results-archive?"
+
+    major_tournaments = tournaments_url + urlencode({"year": year})
+    log.info("Parse major tournaments: {}".format(year))
     _tournaments_per_year(major_tournaments, year, from_cache=from_cache)
 
-    challenge_tournaments = tournaments_url + urlencode({
-        'year': year,
-        'tournamentType': 'ch'
-    })
-    log.info('Parse challenge tournaments: {}'.format(year))
+    challenge_tournaments = tournaments_url + urlencode(
+        {"year": year, "tournamentType": "ch"}
+    )
+    log.info("Parse challenge tournaments: {}".format(year))
     _tournaments_per_year(challenge_tournaments, year, from_cache=from_cache)
 
 
@@ -37,68 +35,59 @@ def _tournaments_per_year(url, year, from_cache=True):
     """
     q = PyQuery(request_html(url, from_cache=from_cache))
 
-    get_name = compose(
-        pq_text,
-        pq_find('.tourney-title'),
-    )
+    get_name = compose(pq_text, pq_find(".tourney-title"))
     get_location = compose(
-        lambda location: [None, location[0]] if len(location) == 1 else [
-            location[0], location[-1]],
+        lambda location: [None, location[0]]
+        if len(location) == 1
+        else [location[0], location[-1]],
         list,
         map(str.strip),
-        str_split(','),
+        str_split(","),
         pq_text,
-        pq_find('.tourney-location')
+        pq_find(".tourney-location"),
     )
     get_dates = compose(
         datetime.isocalendar,
         lambda date: datetime(*date),
         map(int),
         map(str.strip),
-        str_split('.'),
+        str_split("."),
         pq_text,
-        pq_find('.tourney-dates')
+        pq_find(".tourney-dates"),
     )
     get_url = compose(
-        excepts(
-            TypeError,
-            partial(add, ATP_PREFIX),
-            lambda _: '',
-        ),
-        pq_attr('href'),
+        excepts(TypeError, partial(add, ATP_PREFIX), lambda _: ""),
+        pq_attr("href"),
         pq_eq(-1),
-        pq_find('td a'),
+        pq_find("td a"),
     )
-    get_id = compose(
-        juxt(get(6, default=''), get(7, default='')),
-        str_split('/')
-    )
+    get_id = compose(juxt(get(6, default=""), get(7, default="")), str_split("/"))
 
     get_surface = compose(
-        juxt(get(0, default=''), get(1, default='')),
-        str_split(' '),
+        juxt(get(0, default=""), get(1, default="")),
+        str_split(" "),
         str.lower,
         pq_text,
         pq_eq(4),
-        pq_find('td'),
+        pq_find("td"),
     )
 
     get_category = compose(
         flip(get(default=None))(tournament_category_map),
         get(0),
-        str_split('.'),
+        str_split("."),
         get(-1),
-        str_split('categorystamps_'),
-        pq_attr('src'),
+        str_split("categorystamps_"),
+        pq_attr("src"),
         pq_eq(0),
-        pq_find('td img')
+        pq_find("td img"),
     )
 
-    for one_result in q.find('.tourney-result'):
+    for one_result in q.find(".tourney-result"):
         url = get_url(one_result)
         name = get_name(one_result)
         if not url:
-            log.warning('{} is not started yet'.format(name))
+            log.warning("{} is not started yet".format(name))
             # tournament in future
             continue
 
@@ -122,10 +111,13 @@ def _tournaments_per_year(url, year, from_cache=True):
             category=category,
         )
         if not all(result.values()):
-            log.warning('{}:{} lacks {}'.format(
-                build_tournament_key(year, slug, code), url,
-                [key for key, value in result.items() if not value]
-            ))
+            log.warning(
+                "{}:{} lacks {}".format(
+                    build_tournament_key(year, slug, code),
+                    url,
+                    [key for key, value in result.items() if not value],
+                )
+            )
         key = build_tournament_key(year, slug, code)
         db[key] = result
         track_lacked(key, url, result)
@@ -138,42 +130,39 @@ def tournaments_details(year, from_cache=True):
     :param year: Tournament year
     :param from_cache: Take page html form db cache
     """
-    log.info('Parse tournaments details: {}'.format(year))
+    log.info("Parse tournaments details: {}".format(year))
 
     run_in_pool(
         curry(tournament_detail, from_cache=from_cache),
         get_tournament_keys(year),
-        'Parse tournaments details: {}'.format(year),
+        "Parse tournaments details: {}".format(year),
     )
 
 
 def tournament_detail(key, from_cache=True):
     tournament = db[key]
-    url = tournament['url']
-    log.debug('{}:{} parse tournament detail'.format(key, url))
+    url = tournament["url"]
+    log.debug("{}:{} parse tournament detail".format(key, url))
 
     html = request_html(url, from_cache=from_cache)
 
     get_dates = compose(
         map(lambda date: datetime(*date).date()),
         map(map(int)),
-        map(str_split('.')),
+        map(str_split(".")),
         map(str.strip),
-        str_split('-'),
+        str_split("-"),
         pq_text,
-        pq_find('.tourney-result .tourney-dates')
+        pq_find(".tourney-result .tourney-dates"),
     )
 
     date_start, date_end = get_dates(html)
 
-    result = dict(
-        date_start=date_start,
-        date_end=date_end,
-    )
+    result = dict(date_start=date_start, date_end=date_end)
 
     db[key] = merge(tournament, result)
     track_lacked(key, url, result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run(tournaments_per_year, tournaments_details, tournament_detail)

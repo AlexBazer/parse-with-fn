@@ -1,30 +1,12 @@
-ATP_PREFIX = 'https://www.atptour.com'
+ATP_PREFIX = "https://www.atptour.com"
 
 tournament_categories = [
-    {
-        "name": "ATP Tour",
-        "searchCode": "atp"
-    },
-    {
-        "name": "Grand Slams",
-        "searchCode": "gs"
-    },
-    {
-        "name": "ATP Tour Masters 1000",
-        "searchCode": "1000"
-    },
-    {
-        "name": "ATP Challenger Tour",
-        "searchCode": "ch"
-    },
-    {
-        "name": "ITF Futures",
-        "searchCode": "fu"
-    },
-    {
-        "name": "XXI",
-        "searchCode": "XXI"
-    }
+    {"name": "ATP Tour", "searchCode": "atp"},
+    {"name": "Grand Slams", "searchCode": "gs"},
+    {"name": "ATP Tour Masters 1000", "searchCode": "1000"},
+    {"name": "ATP Challenger Tour", "searchCode": "ch"},
+    {"name": "ITF Futures", "searchCode": "fu"},
+    {"name": "XXI", "searchCode": "XXI"},
 ]
 
 tournament_category_map = {
@@ -34,5 +16,5 @@ tournament_category_map = {
     "grandslam": "Grand Slam",
     "challenger": "ATP Challenger Tour",
     "nextgen": "Next Gen ATP",
-    "finals": "Nitto ATP Finals"
+    "finals": "Nitto ATP Finals",
 }

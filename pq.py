@@ -1,6 +1,7 @@
 from toolz.curried import curry, flip
 from pyquery import PyQuery
-__all__ = ['PyQuery', 'pq_text', 'pq_find', 'pq_parents', 'pq_prev', 'pq_eq', 'pq_attr']
+
+__all__ = ["PyQuery", "pq_text", "pq_find", "pq_parents", "pq_prev", "pq_eq", "pq_attr"]
 
 pq_text = lambda q: PyQuery(q).text()
 pq_find = curry(lambda selector, q: PyQuery(q).find(selector))
