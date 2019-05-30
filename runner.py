@@ -26,7 +26,7 @@ def main(year, debug=True, from_cache=True):
         # tournaments_per_year(year, from_cache=from_cache)
         # tournaments_details(year, from_cache=from_cache)
 
-        matches_per_tournaments(year, from_cache=from_cache)
+        # matches_per_tournaments(year, from_cache=from_cache)
         # matches_details(year, from_cache=from_cache)
 
         players_details(from_cache=from_cache)
