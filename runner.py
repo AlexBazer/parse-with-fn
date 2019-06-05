@@ -3,7 +3,7 @@ import logzero
 from clize import run
 from toolz.curried import *
 from urllib.parse import urlencode
-from utils import run_in_pool
+from utils.concurrent import run_in_pool
 from utils.browser import close_browsers
 
 from page_parser import *
@@ -27,7 +27,7 @@ def main(year, debug=True, from_cache=True):
         # tournaments_details(year, from_cache=from_cache)
 
         # matches_per_tournaments(year, from_cache=from_cache)
-        # matches_details(year, from_cache=from_cache)
+        matches_details(year, from_cache=from_cache)
 
         players_details(from_cache=from_cache)
     finally:
@@ -132,7 +132,7 @@ def matches_details(year, from_cache=True):
         curry(update_match_details, from_cache=from_cache),
         get_match_keys(year),
         "Parse matches per tournaments: {}".format(year),
-        debug=True,
+        # debug=True,
     )
 
 
@@ -156,6 +156,7 @@ def players_details(from_cache=True):
         curry(update_player, from_cache=from_cache),
         get_player_keys(),
         "Parse players details",
+        # True,
     )
 
 
@@ -165,7 +166,9 @@ def update_player(key, from_cache=True):
     if not url:
         return
 
-    db.set(key, merge(player, player_detail(url, from_cache=from_cache)))
+    player = merge(player, player_detail(url, from_cache=from_cache))
+    log.track_lacked(key, url, player)
+    db.set(key, player)
 
 
 if __name__ == "__main__":

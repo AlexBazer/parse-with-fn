@@ -19,7 +19,6 @@ def get_browser():
         return TorBrowserDriver("/home/alex/tor-browser_en-US/")
 
     browser_connection = browser_connections.get()
-    print(browser_connections.qsize())
     return get_remote_browser(**browser_connection)
 
 

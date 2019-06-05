@@ -1,8 +1,10 @@
 from datetime import datetime
 from clize import run
 from toolz.curried import *
-from pq import *
-from utils import *
+from utils import resolve_url
+from utils.pq import *
+from utils.toolz import *
+from utils.request import request_html
 from constants import ATP_PREFIX, tournament_category_map
 from countries import countries_code_map
 import log
@@ -203,6 +205,7 @@ def match_detail(url, from_cache=True):
     get_player_details = excepts(
         TypeError,
         compose(
+            lambda d: dict(d, id=f"{d['slug']}-{d['code']}" if d.get('slug') else None),
             dict,
             curry(zip, ["url", "full_name", "slug", "code"]),
             juxt(
@@ -226,6 +229,7 @@ def match_detail(url, from_cache=True):
     )
 
     winner = get_winner(html)
+
     looser = get_looser(html)
 
     get_is_winner_left = compose(
@@ -315,8 +319,10 @@ def player_detail(url, from_cache=True):
         pq_text,
         pq_find(".player-profile-hero-dash .player-flag-code"),
     )
-
-    return dict(get_basic_detail(html), country=get_country(html))
+    return dict(
+        get_basic_detail(html),
+        country=get_country(html)
+    )
 
 
 if __name__ == "__main__":
