@@ -97,19 +97,19 @@ def tournament_detail(url, from_cache=True):
     html = request_html(url, from_cache=from_cache)
 
     get_dates = compose(
-        map(lambda date: datetime(*date).date()),
-        map(map(int)),
-        map(str_split(".")),
+        list,
         map(str.strip),
         str_split("-"),
         pq_text,
         pq_find(".tourney-result .tourney-dates"),
     )
-    try:
-        date_start, date_end = get_dates(html)
-        return dict(date_start=date_start, date_end=date_end)
-    except ValueError:
-        return {}
+    dates = get_dates(html)
+    if not dates:
+        dates = ['', '']
+    elif len(dates) == 1:
+        dates = [dates[0], '']
+    date_start, date_end = get_dates(html)
+    return dict(date_start=date_start, date_end=date_end)
 
 
 split_player_url = compose(str_split("/"), pq_attr("href"))
