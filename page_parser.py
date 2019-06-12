@@ -319,9 +319,19 @@ def player_detail(url, from_cache=True):
         pq_text,
         pq_find(".player-profile-hero-dash .player-flag-code"),
     )
+
+    get_name = compose(
+        ' '.join,
+        map(str_strip('\r')),
+        str_split('\n'),
+        pq_text,
+        pq_find('.player-profile-hero-name')
+    )
+
     return dict(
         get_basic_detail(html),
-        country=get_country(html)
+        country=get_country(html),
+        name=get_name(html)
     )
 
 
