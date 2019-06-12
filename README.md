@@ -1,16 +1,27 @@
-# Tournaments parser `tournament.py`
+# `urils.browser` Module
 
-Parses tournament list per year and each tournament page for additional information
+Module can be used to request page content through tor browser
 
+* Start redis container
 ```
->> python tournament.py --help
-Usage: tournament.py command [args...]
-
-Commands:
-  tournaments-per-year   Parse tournaments list for a specific year and store data per tournament
-  tournaments-details    Parse each tournament for a specific year to get more deetails and store data per tournament
+cd redis_conf
+docker-compose up 
 ```
 
+* Start browser workers
+```
+huey_consumer page_getter.huey -k process -w 4
+```
+
+* Import module and request required page
+```
+from utils.browser import get_html
+
+print(get_html('https://google.com').get(blocking=True))
+```
 
 
-!Handle (DEF) in match score
+TODO: 
+* Clean requirements.txt
+* Handle exceptions in worker to close webDriver
+* Initiate new tor instance on each webDriver creation

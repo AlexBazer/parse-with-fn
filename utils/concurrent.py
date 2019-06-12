@@ -9,7 +9,7 @@ from progressbar import ProgressBar
 from db import db
 
 
-def run_in_pool(fn, iterable, desc="", pool_size=3, debug=False):
+def run_in_pool(fn, iterable, desc="", pool_size=4, debug=False):
     items = list(iterable)
 
     if debug:

@@ -4,7 +4,6 @@ from clize import run
 from toolz.curried import *
 from urllib.parse import urlencode
 from utils.concurrent import run_in_pool
-from utils.browser import close_browsers
 
 from page_parser import *
 from db import (
@@ -22,16 +21,12 @@ def main(year, debug=True, from_cache=True):
     if not debug:
         logzero.loglevel(logging.INFO)
 
-    try:
-        # tournaments_per_year(year, from_cache=from_cache)
-        # tournaments_details(year, from_cache=from_cache)
+    tournaments_per_year(year, from_cache=from_cache)
+    tournaments_details(year, from_cache=from_cache)
 
-        # matches_per_tournaments(year, from_cache=from_cache)
-        matches_details(year, from_cache=from_cache)
-
-        players_details(from_cache=from_cache)
-    finally:
-        close_browsers()
+    matches_per_tournaments(year, from_cache=from_cache)
+    matches_details(year, from_cache=from_cache)
+    players_details(from_cache=from_cache)
 
 
 def tournaments_per_year(year, from_cache=True):
@@ -108,6 +103,7 @@ def update_matches_per_tournament_details(key, from_cache=True):
         )
         match_key = build_match_key(item)
         merged_item = merge(db.get(match_key) or {}, item)
+        log.track_lacked(key, url, merged_item)
         db.set(match_key, merged_item)
 
         player = merged_item["winner"]
@@ -172,4 +168,4 @@ def update_player(key, from_cache=True):
 
 
 if __name__ == "__main__":
-    run(main)
+    run(main, matches_per_tournaments, matches_details)

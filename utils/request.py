@@ -1,7 +1,8 @@
 import log
 from urllib.parse import urlsplit, urlunsplit
 from db import db
-from .browser import get_browser, put_browser_back
+from .browser import get_html
+
 
 def get_ajax_url(url):
     splitted = urlsplit(url)
@@ -20,10 +21,7 @@ def request_html(url, from_cache=True):
 
     if not html or not from_cache:
         log.debug("Request {}".format(url))
-        browser = get_browser()
-        browser.get(get_ajax_url(url))
-        html = browser.page_source
-        put_browser_back(browser)
+        html = get_html(get_ajax_url(url)).get(blocking=True)
         db.set(url, html)
 
     return html
