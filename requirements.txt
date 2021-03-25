@@ -51,7 +51,7 @@ pylint==2.3.1
 pyquery==1.4.0
 python-dotenv==0.10.1
 python-utils==2.3.0
-PyYAML==5.1
+PyYAML==5.4
 redis==3.2.1
 requests==2.21.0
 requests-html==0.2.2
